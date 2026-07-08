@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Monitor — Network Continuity Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">📡</div>
+                <div>
+                    <h1>Ping Monitor</h1>
+                    <span class="version-badge">v1.0.0 Pro</span>
+                </div>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="tab-monitor">
+                    <span class="icon">⚡</span>
+                    <span>Live Monitor</span>
+                </button>
+                <button class="nav-item" data-tab="tab-history">
+                    <span class="icon">📜</span>
+                    <span>Outage History</span>
+                </button>
+                <button class="nav-item" data-tab="tab-overview">
+                    <span class="icon">📊</span>
+                    <span>Targets Overview</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="server-status">
+                    <span class="status-dot online"></span>
+                    <span>SQLite WAL Engine</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="content">
+            <!-- TAB 1: LIVE MONITOR -->
+            <section id="tab-monitor" class="tab-pane active">
+                <header class="section-header">
+                    <h2>Мониторинг в реальном времени</h2>
+                    <p>Непрерывное отслеживание доступности узла, отображение задержек (RTT) и мгновенная фиксация потерь связи.</p>
+                </header>
+
+                <!-- Control Box -->
+                <div class="glass-card control-panel">
+                    <div class="form-group">
+                        <label for="monitor-target">Целевой IP-адрес или Хост</label>
+                        <input type="text" id="monitor-target" placeholder="например, 192.168.1.1 или 8.8.8.8" value="192.168.1.1">
+                    </div>
+                    <div class="form-group" style="max-width: 150px;">
+                        <label for="monitor-interval">Интервал (сек)</label>
+                        <input type="number" id="monitor-interval" min="1" max="60" value="1">
+                    </div>
+                    <div class="button-group">
+                        <button id="btn-start" class="btn btn-primary">▶ Запустить мониторинг</button>
+                        <button id="btn-stop" class="btn btn-danger" disabled>■ Остановить</button>
+                    </div>
+                </div>
+
+                <!-- Live Status Banner -->
+                <div id="status-banner" class="status-banner idle">
+                    <div class="status-indicator">
+                        <span class="pulse-dot"></span>
+                        <h3 id="status-text">Ожидание запуска...</h3>
+                    </div>
+                    <div class="status-target" id="banner-target">—</div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">Текущий RTT</span>
+                        <div class="metric-value"><span id="metric-rtt">0</span> <small>мс</small></div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Доступность (Uptime)</span>
+                        <div class="metric-value" id="metric-uptime">100.00%</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Отправлено запросов</span>
+                        <div class="metric-value" id="metric-sent">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Потеряно пакетов</span>
+                        <div class="metric-value text-danger" id="metric-lost">0</div>
+                    </div>
+                </div>
+
+                <!-- Live Chart -->
+                <div class="glass-card chart-container">
+                    <h3>Динамика задержки ответа (RTT в миллисекундах)</h3>
+                    <canvas id="rttChart"></canvas>
+                </div>
+            </section>
+
+            <!-- TAB 2: OUTAGE HISTORY (CHECK) -->
+            <section id="tab-history" class="tab-pane">
+                <header class="section-header">
+                    <h2>Проверка истории обрывов связи</h2>
+                    <p>Анализ сохраненных логов в базе данных и выявление точных интервалов времени, когда связь с устройством терялась.</p>
+                </header>
+
+                <div class="glass-card filter-panel">
+                    <div class="form-group">
+                        <label for="history-target">Выберите устройство</label>
+                        <select id="history-target">
+                            <option value="">Загрузка списка...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Быстрый выбор периода</label>
+                        <div class="quick-buttons">
+                            <button class="btn btn-outline" data-range="1h">Последний 1 час</button>
+                            <button class="btn btn-outline active" data-range="24h">Последние 24 часа</button>
+                            <button class="btn btn-outline" data-range="7d">Последние 7 дней</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="history-from">С точной даты / времени</label>
+                        <input type="text" id="history-from" placeholder="YYYY-MM-DD HH:MM:SS" value="24h">
+                    </div>
+                    <div class="form-group">
+                        <label for="history-to">По точную дату / время</label>
+                        <input type="text" id="history-to" placeholder="YYYY-MM-DD HH:MM:SS" value="now">
+                    </div>
+                    <div class="button-group" style="align-items: flex-end;">
+                        <button id="btn-check-history" class="btn btn-primary">🔍 Анализировать</button>
+                    </div>
+                </div>
+
+                <!-- History Summary Card -->
+                <div id="history-summary" class="glass-card summary-card" style="display: none;">
+                    <div id="verdict-box" class="verdict-box success">
+                        <h3 id="verdict-title">[ОТЛИЧНО] Связь не терялась</h3>
+                        <p id="verdict-desc">За выбранный период потеряно 0 пакетов из 0 запросов.</p>
+                    </div>
+                    <div class="history-metrics">
+                        <div><span>Средний RTT:</span> <strong id="hist-avg-rtt">0 мс</strong></div>
+                        <div><span>Мин. RTT:</span> <strong id="hist-min-rtt">0 мс</strong></div>
+                        <div><span>Макс. RTT:</span> <strong id="hist-max-rtt">0 мс</strong></div>
+                        <div><span>Общее время простоя:</span> <strong id="hist-downtime">0с</strong></div>
+                    </div>
+                </div>
+
+                <!-- Outages Table -->
+                <div class="glass-card table-container">
+                    <h3>Зафиксированные события отключения и сбоев</h3>
+                    <table class="outages-table">
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>Начало сбоя</th>
+                                <th>Конец сбоя</th>
+                                <th>Длительность</th>
+                                <th>Потеряно пакетов</th>
+                                <th>Причина (Ошибка)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outages-tbody">
+                            <tr>
+                                <td colspan="6" class="empty-state">Выберите цель и нажмите "Анализировать" для загрузки истории</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 3: TARGETS OVERVIEW -->
+            <section id="tab-overview" class="tab-pane">
+                <header class="section-header">
+                    <h2>Сводка по всем сохраненным устройствам</h2>
+                    <p>Общая статистика доступности сетевых узлов за последние 24 часа работы монитора.</p>
+                </header>
+
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Аптайм устройств (24 часа)</h3>
+                        <button id="btn-refresh-overview" class="btn btn-outline">🔄 Обновить данные</button>
+                    </div>
+                    <table class="overview-table">
+                        <thead>
+                            <tr>
+                                <th>Целевой узел (IP/Хост)</th>
+                                <th>Отправлено пингов</th>
+                                <th>Потеряно</th>
+                                <th>Доступность (Uptime)</th>
+                                <th>Зафиксировано сбоев</th>
+                                <th>Средний RTT</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overview-tbody">
+                            <tr>
+                                <td colspan="7" class="empty-state">Загрузка данных из базы...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

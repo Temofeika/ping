@@ -9,27 +9,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Temofeika/ping/internal/gui"
 	"github.com/Temofeika/ping/internal/storage"
 	"github.com/Temofeika/ping/internal/ui"
 )
 
 func main() {
 	// Если программа запущена без аргументов (например, двойным кликом в Windows Explorer),
-	// переходим в интерактивный текстовый режим
+	// запускаем красивый графический веб-интерфейс (GUI) по умолчанию
 	if len(os.Args) == 1 {
-		st, err := storage.NewStorage("ping_history.db")
-		if err != nil {
-			fmt.Printf("Ошибка открытия базы данных: %v\n", err)
-			os.Exit(1)
-		}
-		defer st.Close()
-
-		ui.RunInteractive(st)
+		runGuiCommand([]string{"--open"})
 		return
 	}
 
 	subcommand := os.Args[1]
 	switch strings.ToLower(subcommand) {
+	case "gui":
+		runGuiCommand(os.Args[2:])
+	case "menu", "interactive":
+		runMenuCommand()
 	case "monitor":
 		runMonitorCommand(os.Args[2:])
 	case "check":
@@ -53,10 +51,16 @@ func main() {
 
 func printUsage() {
 	fmt.Println("Использование консольной утилиты Ping Monitor:")
-	fmt.Println("  ping-monitor.exe                           # Запуск интерактивного меню (двойной клик)")
+	fmt.Println("  ping-monitor.exe                           # Запуск графического интерфейса (GUI) при двойном клике")
+	fmt.Println("  ping-monitor.exe gui [флаги]               # Запуск веб-дашборда с указанием порта")
+	fmt.Println("  ping-monitor.exe menu                      # Запуск текстового интерактивного меню в консоли")
 	fmt.Println("  ping-monitor.exe monitor [флаги]           # Непрерывный мониторинг пинга")
 	fmt.Println("  ping-monitor.exe check [флаги]             # Проверка обрывов связи за период времени")
 	fmt.Println("  ping-monitor.exe stats [флаги]             # Сводная статистика доступности")
+	fmt.Println("\nФлаги команды gui:")
+	fmt.Println("  --port <число>        Порт локального сервера (по умолчанию: 8585)")
+	fmt.Println("  --open=<true|false>   Автоматически открывать браузер (по умолчанию: true)")
+	fmt.Println("  --db <путь>           Путь к базе данных SQLite (по умолчанию: ping_history.db)")
 	fmt.Println("\nФлаги команды monitor:")
 	fmt.Println("  --target <IP/Хост>    Узел для мониторинга (по умолчанию: 192.168.1.1)")
 	fmt.Println("  --interval <сек>      Интервал опроса в секундах (по умолчанию: 1)")
@@ -69,6 +73,37 @@ func printUsage() {
 	fmt.Println("\nПример использования:")
 	fmt.Println("  ping-monitor.exe monitor --target 8.8.8.8 --interval 1")
 	fmt.Println("  ping-monitor.exe check --target 8.8.8.8 --from \"2026-07-08 10:00:00\" --to \"2026-07-08 12:00:00\"")
+}
+
+func runMenuCommand() {
+	st, err := storage.NewStorage("ping_history.db")
+	if err != nil {
+		fmt.Printf("Ошибка открытия базы данных: %v\n", err)
+		os.Exit(1)
+	}
+	defer st.Close()
+	ui.RunInteractive(st)
+}
+
+func runGuiCommand(args []string) {
+	fs := flag.NewFlagSet("gui", flag.ExitOnError)
+	port := fs.Int("port", 8585, "Порт для запуска HTTP сервера веб-дашборда")
+	dbPath := fs.String("db", "ping_history.db", "Путь к файлу базы данных SQLite")
+	openBrowser := fs.Bool("open", true, "Автоматически открывать дашборд в браузере")
+	_ = fs.Parse(args)
+
+	st, err := storage.NewStorage(*dbPath)
+	if err != nil {
+		fmt.Printf("Ошибка подключения к БД %s: %v\n", *dbPath, err)
+		os.Exit(1)
+	}
+	defer st.Close()
+
+	srv := gui.NewServer(st, *port)
+	if err := srv.Start(*openBrowser); err != nil {
+		fmt.Printf("Ошибка работы GUI сервера: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func runMonitorCommand(args []string) {
