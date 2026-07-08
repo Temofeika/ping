@@ -16,9 +16,9 @@ import (
 
 func main() {
 	// Если программа запущена без аргументов (например, двойным кликом в Windows Explorer),
-	// запускаем красивый графический веб-интерфейс (GUI) по умолчанию
+	// запускаем нативное десктопное графическое окно приложения (Fyne GUI)
 	if len(os.Args) == 1 {
-		runGuiCommand([]string{"--open"})
+		runGuiCommand(nil)
 		return
 	}
 
@@ -51,15 +51,13 @@ func main() {
 
 func printUsage() {
 	fmt.Println("Использование консольной утилиты Ping Monitor:")
-	fmt.Println("  ping-monitor.exe                           # Запуск графического интерфейса (GUI) при двойном клике")
-	fmt.Println("  ping-monitor.exe gui [флаги]               # Запуск веб-дашборда с указанием порта")
+	fmt.Println("  ping-monitor.exe                           # Запуск нативного десктопного окна (двойной клик)")
+	fmt.Println("  ping-monitor.exe gui [флаги]               # Запуск десктопного GUI с выбором файла БД")
 	fmt.Println("  ping-monitor.exe menu                      # Запуск текстового интерактивного меню в консоли")
 	fmt.Println("  ping-monitor.exe monitor [флаги]           # Непрерывный мониторинг пинга")
 	fmt.Println("  ping-monitor.exe check [флаги]             # Проверка обрывов связи за период времени")
 	fmt.Println("  ping-monitor.exe stats [флаги]             # Сводная статистика доступности")
 	fmt.Println("\nФлаги команды gui:")
-	fmt.Println("  --port <число>        Порт локального сервера (по умолчанию: 8585)")
-	fmt.Println("  --open=<true|false>   Автоматически открывать браузер (по умолчанию: true)")
 	fmt.Println("  --db <путь>           Путь к базе данных SQLite (по умолчанию: ping_history.db)")
 	fmt.Println("\nФлаги команды monitor:")
 	fmt.Println("  --target <IP/Хост>    Узел для мониторинга (по умолчанию: 192.168.1.1)")
@@ -87,9 +85,7 @@ func runMenuCommand() {
 
 func runGuiCommand(args []string) {
 	fs := flag.NewFlagSet("gui", flag.ExitOnError)
-	port := fs.Int("port", 8585, "Порт для запуска HTTP сервера веб-дашборда")
 	dbPath := fs.String("db", "ping_history.db", "Путь к файлу базы данных SQLite")
-	openBrowser := fs.Bool("open", true, "Автоматически открывать дашборд в браузере")
 	_ = fs.Parse(args)
 
 	st, err := storage.NewStorage(*dbPath)
@@ -99,11 +95,7 @@ func runGuiCommand(args []string) {
 	}
 	defer st.Close()
 
-	srv := gui.NewServer(st, *port)
-	if err := srv.Start(*openBrowser); err != nil {
-		fmt.Printf("Ошибка работы GUI сервера: %v\n", err)
-		os.Exit(1)
-	}
+	gui.RunDesktopApp(st)
 }
 
 func runMonitorCommand(args []string) {
