@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Install Linux GUI dependencies for Fyne
+        run: sudo apt-get update && sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -51,9 +53,38 @@ jobs:
           path: dist/
           retention-days: 30
 
+  build-linux:
+    name: Build Linux Desktop Executable
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Linux GUI dependencies for Fyne
+        run: sudo apt-get update && sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: true
+      - name: Download dependencies
+        run: go mod download
+      - name: Build Linux executable
+        env:
+          CGO_ENABLED: 1
+          GOOS: linux
+          GOARCH: amd64
+        run: go build -ldflags="-s -w" -o dist/ping-monitor-linux-amd64 .
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ping-monitor-binaries-linux
+          path: dist/
+          retention-days: 30
+
   release:
     name: Create GitHub Release
-    needs: [test, build-windows]
+    needs: [test, build-windows, build-linux]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
