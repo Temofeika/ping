@@ -1,0 +1,22 @@
+# Бинарные файлы сборки
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+dist/
+bin/
+
+# Файлы баз данных SQLite и логи
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Файлы ОС и редакторов
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
