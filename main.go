@@ -60,7 +60,7 @@ func printUsage() {
 	fmt.Println("\nФлаги команды gui:")
 	fmt.Println("  --db <путь>           Путь к базе данных SQLite (по умолчанию: ping_history.db)")
 	fmt.Println("\nФлаги команды monitor:")
-	fmt.Println("  --target <IP/Хост>    Узел для мониторинга (по умолчанию: 192.168.1.1)")
+	fmt.Println("  --target <IP/Хосты>   Узел или несколько адресов через запятую (напр: 192.168.1.1,8.8.8.8)")
 	fmt.Println("  --interval <сек>      Интервал опроса в секундах (по умолчанию: 1)")
 	fmt.Println("  --db <путь>           Путь к базе данных SQLite (по умолчанию: ping_history.db)")
 	fmt.Println("\nФлаги команды check:")
@@ -69,7 +69,7 @@ func printUsage() {
 	fmt.Println("  --to <время>          Конец периода (ГГГГ-ММ-ДД ЧЧ:ММ:СС или 'now', по умолчанию 'now')")
 	fmt.Println("  --db <путь>           Путь к базе данных SQLite")
 	fmt.Println("\nПример использования:")
-	fmt.Println("  ping-monitor.exe monitor --target 8.8.8.8 --interval 1")
+	fmt.Println("  ping-monitor.exe monitor --target \"192.168.1.1, 8.8.8.8, 1.1.1.1\" --interval 1")
 	fmt.Println("  ping-monitor.exe check --target 8.8.8.8 --from \"2026-07-08 10:00:00\" --to \"2026-07-08 12:00:00\"")
 }
 
