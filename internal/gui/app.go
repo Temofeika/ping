@@ -10,9 +10,12 @@ import (
 
 // DesktopApp инкапсулирует состояние и компоненты нативного окна приложения
 type DesktopApp struct {
-	fyneApp fyne.App
-	win     fyne.Window
-	st      *storage.Storage
+	fyneApp         fyne.App
+	win             fyne.Window
+	st              *storage.Storage
+	getActiveHosts  func() []string
+	refreshHistory  func()
+	refreshOverview func()
 }
 
 // RunDesktopApp инициализирует и запускает нативное графическое окно Windows
@@ -38,6 +41,15 @@ func RunDesktopApp(st *storage.Storage) {
 		container.NewTabItemWithIcon("📊 Targets Overview", theme.ListIcon(), overviewTab),
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
+
+	tabs.OnSelected = func(item *container.TabItem) {
+		if item.Text == "📜 Outage History" && d.refreshHistory != nil {
+			d.refreshHistory()
+		}
+		if item.Text == "📊 Targets Overview" && d.refreshOverview != nil {
+			d.refreshOverview()
+		}
+	}
 
 	w.SetContent(tabs)
 	w.ShowAndRun()

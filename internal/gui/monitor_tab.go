@@ -31,6 +31,18 @@ func (d *DesktopApp) createMonitorTab() fyne.CanvasObject {
 	targetEntry.SetText("192.168.1.1, 8.8.8.8, 1.1.1.1")
 	targetEntry.SetPlaceHolder("IP или хосты через запятую (например, 192.168.1.1, 8.8.8.8)")
 
+	d.getActiveHosts = func() []string {
+		rawTargets := strings.Split(targetEntry.Text, ",")
+		var targets []string
+		for _, rt := range rawTargets {
+			tClean := strings.TrimSpace(rt)
+			if tClean != "" {
+				targets = append(targets, tClean)
+			}
+		}
+		return targets
+	}
+
 	intervalEntry := widget.NewEntry()
 	intervalEntry.SetText("1")
 	intervalEntry.SetPlaceHolder("сек")

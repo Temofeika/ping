@@ -65,6 +65,8 @@ func (d *DesktopApp) createOverviewTab() fyne.CanvasObject {
 		table.Refresh()
 	}
 
+	d.refreshOverview = refreshData
+
 	refreshBtn := widget.NewButtonWithIcon("Обновить данные из БД", theme.ViewRefreshIcon(), refreshData)
 	refreshBtn.Importance = widget.MediumImportance
 
@@ -74,7 +76,6 @@ func (d *DesktopApp) createOverviewTab() fyne.CanvasObject {
 		widget.NewSeparator(),
 	)
 
-	// Автоматическая загрузка данных при создании вкладки
 	go func() {
 		time.Sleep(200 * time.Millisecond)
 		refreshData()

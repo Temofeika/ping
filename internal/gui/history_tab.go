@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,39 @@ func (d *DesktopApp) createHistoryTab() fyne.CanvasObject {
 	verdictLabel := widget.NewLabelWithStyle("Выберите цель и нажмите «Анализировать» для загрузки истории обрывов связи.", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	statsLabel := widget.NewLabelWithStyle("", fyne.TextAlignCenter, fyne.TextStyle{})
 
+	refreshTargetsList := func() {
+		targetMap := make(map[string]bool)
+		dbTargets, _ := d.st.GetAllTargets()
+		for _, t := range dbTargets {
+			tClean := strings.TrimSpace(t)
+			if tClean != "" {
+				targetMap[tClean] = true
+			}
+		}
+		if d.getActiveHosts != nil {
+			for _, t := range d.getActiveHosts() {
+				tClean := strings.TrimSpace(t)
+				if tClean != "" {
+					targetMap[tClean] = true
+				}
+			}
+		}
+		var allTargets []string
+		for t := range targetMap {
+			allTargets = append(allTargets, t)
+		}
+		sort.Strings(allTargets)
+		if len(allTargets) == 0 {
+			allTargets = []string{"192.168.1.1", "8.8.8.8"}
+		}
+		targetSelect.SetOptions(allTargets)
+		if strings.TrimSpace(targetSelect.Text) == "" && len(allTargets) > 0 {
+			targetSelect.SetText(allTargets[0])
+		}
+	}
+
+	d.refreshHistory = refreshTargetsList
+
 	var tableData [][]string
 	tableData = append(tableData, []string{"№", "Начало сбоя", "Конец сбоя", "Длительность", "Потеряно", "Причина (Ошибка)"})
 
@@ -64,6 +98,7 @@ func (d *DesktopApp) createHistoryTab() fyne.CanvasObject {
 	btn7d := widget.NewButton("7 дней", func() { fromEntry.SetText("7d"); toEntry.SetText("now") })
 
 	analyzeFunc := func() {
+		refreshTargetsList()
 		target := strings.TrimSpace(targetSelect.Text)
 		if target == "" {
 			verdictLabel.SetText("❌ Ошибка: укажите или выберите целевой узел")
@@ -162,8 +197,12 @@ func (d *DesktopApp) createHistoryTab() fyne.CanvasObject {
 	analyzeBtn := widget.NewButtonWithIcon("Анализировать", theme.SearchIcon(), analyzeFunc)
 	analyzeBtn.Importance = widget.HighImportance
 
+	refreshTargetsBtn := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), refreshTargetsList)
+
+	targetInputRow := container.NewBorder(nil, nil, nil, refreshTargetsBtn, targetSelect)
+
 	filterBox := container.NewGridWithColumns(3,
-		container.New(layout.NewFormLayout(), widget.NewLabel("Узел (IP/Хост):"), targetSelect),
+		container.New(layout.NewFormLayout(), widget.NewLabel("Узел (IP/Хост):"), targetInputRow),
 		container.New(layout.NewFormLayout(), widget.NewLabel("Быстрый период:"), container.NewGridWithColumns(3, btn1h, btn24h, btn7d)),
 		analyzeBtn,
 	)
